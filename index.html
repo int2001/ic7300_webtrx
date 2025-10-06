@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IC-7300 Web Controller</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 30px;
+        }
+
+        .status {
+            background: #333;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #666;
+        }
+
+        .status.connected {
+            border-left-color: #4CAF50;
+        }
+
+        .status.disconnected {
+            border-left-color: #f44336;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+            background: #333;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .control-group h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #4CAF50;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        button:hover:not(:disabled) {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        button.danger {
+            background: #f44336;
+        }
+
+        button.danger:hover:not(:disabled) {
+            background: #da190b;
+        }
+
+        button.secondary {
+            background: #2196F3;
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: #0b7dda;
+        }
+
+        button.ptt-active {
+            background: #ff9800;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            background: #444;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .freq-display {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            color: #4CAF50;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            padding: 20px;
+            background: #1a1a1a;
+            border-radius: 5px;
+        }
+
+        .mode-display {
+            font-size: 24px;
+            text-align: center;
+            color: #2196F3;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .bargraph-container {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 5px;
+            border: 2px solid #555;
+        }
+
+        .bargraph {
+            display: flex;
+            gap: 3px;
+            height: 40px;
+            margin-bottom: 10px;
+        }
+
+        .bar-segment {
+            flex: 1;
+            background: #2a2a2a;
+            border-radius: 2px;
+            transition: background-color 0.2s ease;
+            border: 1px solid #333;
+        }
+
+        .bar-segment.active.green {
+            background: #4CAF50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+
+        .bar-segment.active.red {
+            background: #f44336;
+            box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+        }
+
+        .bargraph-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #888;
+            font-family: 'Courier New', monospace;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-row input {
+            flex: 1;
+        }
+
+        .input-row button {
+            flex-shrink: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #log {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #888;
+        }
+
+        #log div {
+            margin-bottom: 3px;
+        }
+
+        .input-with-toggle {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-with-toggle input {
+            padding-right: 45px;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        .input-with-toggle input[type="password"] {
+            letter-spacing: 4px;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 10px;
+            background: transparent;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            color: #888;
+            transition: color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+        }
+
+        .toggle-visibility:hover {
+            color: #4CAF50;
+            background: transparent;
+            transform: none;
+            box-shadow: none;
+        }
+
+        textarea {
+            font-family: 'Courier New', monospace;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        textarea:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>IC-7300 Web Controller</h1>
+
+        <div class="status disconnected" id="status">
+            <strong>Status:</strong> <span id="statusText">Disconnected</span>
+        </div>
+
+        <div class="control-group">
+            <h2>Connection Settings</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div>
+                    <label for="baudRate">Baud Rate</label>
+                    <select id="baudRate">
+                        <option value="1200">1200</option>
+                        <option value="2400">2400</option>
+                        <option value="4800">4800</option>
+                        <option value="9600">9600</option>
+                        <option value="19200" selected>19200</option>
+                        <option value="38400">38400</option>
+                        <option value="57600">57600</option>
+                        <option value="115200">115200</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="civAddress">CI-V Address (hex)</label>
+                    <input type="text" id="civAddress" value="94" maxlength="2" placeholder="94">
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="connectBtn" onclick="connect()">Connect to IC-7300</button>
+                <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+                <button class="danger" onclick="resetSettings()">Reset Settings</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Wavelog Integration</h2>
+            <div style="margin-bottom: 15px;">
+                <label for="wavelogUrl">Wavelog URL</label>
+                <input type="text" id="wavelogUrl" placeholder="https://your-wavelog-instance.com">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="wavelogApiKey">Wavelog API Key</label>
+                <div class="input-with-toggle">
+                    <input type="password" id="wavelogApiKey" placeholder="Your API Key">
+                    <button type="button" class="toggle-visibility" onclick="toggleApiKeyVisibility()" aria-label="Toggle API key visibility">
+                        <span id="eyeIcon">👁</span>
+                    </button>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="wavelogEnabled" style="width: auto; margin: 0;">
+                <label for="wavelogEnabled" style="margin: 0; cursor: pointer;">Enable Wavelog sync</label>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Current Status</h2>
+            <div class="freq-display" id="freqDisplay">----.--- MHz</div>
+            <div class="mode-display" id="modeDisplay">---</div>
+            <div style="margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label id="meterLabel" style="font-size: 14px; color: #aaa;">S-METER (RX)</label>
+                    <span id="meterValue" style="font-size: 18px; font-weight: bold; color: #ff9800; font-family: 'Courier New', monospace;">---</span>
+                </div>
+                <div class="bargraph-container">
+                    <div class="bargraph" id="bargraph">
+                        <!-- S0-S9: Green segments -->
+                        <div class="bar-segment green" data-level="1"></div>
+                        <div class="bar-segment green" data-level="2"></div>
+                        <div class="bar-segment green" data-level="3"></div>
+                        <div class="bar-segment green" data-level="4"></div>
+                        <div class="bar-segment green" data-level="5"></div>
+                        <div class="bar-segment green" data-level="6"></div>
+                        <div class="bar-segment green" data-level="7"></div>
+                        <div class="bar-segment green" data-level="8"></div>
+                        <div class="bar-segment green" data-level="9"></div>
+                        <!-- S9+: Red segments (10-20dB over S9) -->
+                        <div class="bar-segment red" data-level="10"></div>
+                        <div class="bar-segment red" data-level="11"></div>
+                        <div class="bar-segment red" data-level="12"></div>
+                        <div class="bar-segment red" data-level="13"></div>
+                        <div class="bar-segment red" data-level="14"></div>
+                        <div class="bar-segment red" data-level="15"></div>
+                    </div>
+                    <div class="bargraph-labels">
+                        <span>S1</span>
+                        <span>S3</span>
+                        <span>S5</span>
+                        <span>S7</span>
+                        <span>S9</span>
+                        <span>+20</span>
+                        <span>+40</span>
+                        <span>+60</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Set Frequency</h2>
+            <div class="input-row">
+                <div style="flex: 1;">
+                    <label for="freqInput">Frequency (MHz)</label>
+                    <input type="text" id="freqInput" placeholder="14.074" disabled>
+                </div>
+                <button id="setFreqBtn" onclick="setFrequency()" disabled>Set Frequency</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Set Mode</h2>
+            <div class="input-row">
+                <div style="flex: 1;">
+                    <label for="modeSelect">Mode</label>
+                    <select id="modeSelect" disabled>
+                        <option value="00">LSB</option>
+                        <option value="01">USB</option>
+                        <option value="02">AM</option>
+                        <option value="03">CW</option>
+                        <option value="04">RTTY</option>
+                        <option value="05">FM</option>
+                        <option value="07">CW-R</option>
+                        <option value="08">RTTY-R</option>
+                    </select>
+                </div>
+                <button id="setModeBtn" class="secondary" onclick="setMode()" disabled>Set Mode</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>PTT Control</h2>
+            <div class="button-group">
+                <button id="pttBtn" onclick="togglePTT()" disabled>Push PTT</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>CW Controller (DTR Keying)</h2>
+            <div style="background: #4CAF50; color: #fff; padding: 15px; border-radius: 5px; margin-bottom: 15px; border-left: 4px solid #388E3C;">
+                <strong>✓ DTR Keying Enabled:</strong> This web interface can send CW by controlling the DTR line of the serial port!
+                <br><br>
+                <strong>Setup Required:</strong> In your IC-7300 menu, set <strong>USB Keying (CW)</strong> to <strong>DTR</strong> (or RTS if you prefer).
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="cwKeyLine">CW Key Line</label>
+                <select id="cwKeyLine" disabled>
+                    <option value="dtr">DTR (Data Terminal Ready)</option>
+                    <option value="rts">RTS (Request To Send)</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="cwWPM">Keyer Speed (WPM)</label>
+                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                    <input type="number" id="cwWPM" min="6" max="48" value="20" disabled style="flex: 0 0 100px;">
+                    <span style="color: #888; font-size: 12px; margin-left: 10px; align-self: center;">
+                        (Software timing - does not set radio's keyer speed)
+                    </span>
+                </div>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="cwMessage">CW Message</label>
+                <textarea id="cwMessage" placeholder="Type your CW message here... (A-Z, 0-9, / ? . , = + -)"
+                    style="width: 100%; min-height: 80px; padding: 10px; background: #444; border: 1px solid #555;
+                    border-radius: 5px; color: #e0e0e0; font-size: 14px; font-family: 'Courier New', monospace;
+                    resize: vertical;" disabled></textarea>
+            </div>
+            <div class="button-group">
+                <button id="sendCWBtn" onclick="sendCW()" disabled>Send CW</button>
+                <button class="danger" id="stopCWBtn" onclick="stopCW()" disabled>Stop</button>
+                <button class="secondary" onclick="clearCWMessage()">Clear</button>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h2>Activity Log</h2>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script src="ic7300.js"></script>
+</body>
+</html>
