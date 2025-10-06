@@ -1,6 +1,6 @@
 # IC-7300 Web Controller
 
-Demo at https://dj7nt.de/ic
+Demo at [https://dj7nt.de/ic](https://int2001.github.io/ic7300_webtrx/)
 A browser-based web interface for controlling the Icom IC-7300 transceiver using the Web Serial API.
 
 ## Features
